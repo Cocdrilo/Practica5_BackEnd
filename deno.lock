@@ -4,6 +4,7 @@
     "jsr:@std/assert@1": "1.0.9",
     "jsr:@std/internal@^1.0.5": "1.0.5",
     "npm:@apollo/server@^4.11.2": "4.11.2_graphql@16.10.0",
+    "npm:graphql-type-json@~0.3.2": "0.3.2_graphql@16.10.0",
     "npm:graphql@^16.10.0": "16.10.0",
     "npm:mongodb@^6.12.0": "6.12.0"
   },
@@ -529,6 +530,12 @@
     "gopd@1.2.0": {
       "integrity": "sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg=="
     },
+    "graphql-type-json@0.3.2_graphql@16.10.0": {
+      "integrity": "sha512-J+vjof74oMlCWXSvt0DOf2APEdZOCdubEvGDUAlqH//VBYcOYsGgRW7Xzorr44LvkjiuvecWc8fChxuZZbChtg==",
+      "dependencies": [
+        "graphql"
+      ]
+    },
     "graphql@16.10.0": {
       "integrity": "sha512-AjqGKbDGUFRKIRCP9tCKiIGHyriz2oHEbPIbEtcSLSs4YjReZOIPQQWek4+6hjw62H9QShXHyaGivGiYVLeYFQ=="
     },
@@ -843,6 +850,7 @@
     "dependencies": [
       "jsr:@std/assert@1",
       "npm:@apollo/server@^4.11.2",
+      "npm:graphql-type-json@~0.3.2",
       "npm:graphql@^16.10.0",
       "npm:mongodb@^6.12.0"
     ]
