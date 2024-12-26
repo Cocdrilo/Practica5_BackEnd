@@ -31,8 +31,6 @@ export const resolvers = {
             const moves = await Promise.all(pokemon.moves.map(async (move) => {
                 const moveData = await resolveURL(move.move.url); // Usando la función auxiliar
                 const pokemonsQueAprenden = moveData.learned_by_pokemon.map((n)=>n.url)
-                console.log(move.move.name)
-                console.log(pokemonsQueAprenden)
                 const pokemons = await pokemonsQueAprenden.map(async (n)=>await resolveURL(n))
                 const datos = {
                     accuracy : moveData.accuracy,
@@ -48,6 +46,14 @@ export const resolvers = {
                 };
             }));
             return moves;
+        },
+
+        async abilities(pokemon) {
+            return pokemon.abilities.map(async(ability)=>({
+                name : ability.ability.name,
+                is_hidden : ability.is_hidden,
+                slot : ability.slot
+            }))
         },
 
         async stats(pokemon) {
