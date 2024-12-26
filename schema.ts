@@ -19,7 +19,6 @@ export const schema = `#graphql
         moves: [Move]
         stats: [Stat]
         types: [Type]
-        species: Species
         sprites: Sprites
     }
 
@@ -48,11 +47,6 @@ export const schema = `#graphql
         name: String
     }
 
-
-    type Species {
-        name: String
-        url: JSON
-    }
 
     type Sprites {
         front_default: String

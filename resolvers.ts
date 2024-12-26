@@ -30,10 +30,10 @@ export const resolvers = {
         async moves(pokemon) {
             const moves = await Promise.all(pokemon.moves.map(async (move) => {
                 const moveData = await resolveURL(move.move.url); // Usando la función auxiliar
-                const pokemonsQueAprenden = moveData.learned_by_pokemon.map()
+                const pokemonsQueAprenden = moveData.learned_by_pokemon.map((n)=>n.url)
                 console.log(move.move.name)
                 console.log(pokemonsQueAprenden)
-                const pokemons = await resolveURL(pokemonsQueAprenden.url)
+                const pokemons = await pokemonsQueAprenden.map(async (n)=>await resolveURL(n))
                 const datos = {
                     accuracy : moveData.accuracy,
                     power: moveData.power,
@@ -54,29 +54,15 @@ export const resolvers = {
             return pokemon.stats.map(async (stat) => ({
                 base_stat: stat.base_stat,
                 effort: stat.effort,
-                stat: {
-                    name: stat.stat.name,
-                    details: await resolveURL(stat.stat.url), // Hacer fetch a la URL de la estadística
-                },
+                name : stat.stat.name
             }));
         },
 
         async types(pokemon) {
             return pokemon.types.map(async (type) => ({
                 slot: type.slot,
-                type: {
-                    name: type.type.name,
-                    details: await resolveURL(type.type.url), // Hacer fetch a la URL del tipo
-                },
+                name : type.type.name
             }));
-        },
-
-        async species(pokemon) {
-            const speciesData = await resolveURL(pokemon.species.url); // Hacer fetch a los detalles de la especie
-            return {
-                name: speciesData.name,
-                details: speciesData,
-            };
         },
 
         async sprites(pokemon) {
