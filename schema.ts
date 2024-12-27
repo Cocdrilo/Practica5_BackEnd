@@ -25,8 +25,10 @@ type Pokemon {
 
 type Ability {
     name : String
+    effect : String
     is_hidden : Boolean
     slot : Int
+    pokemonHasIt : [Pokemon]
 }
 
 type Move {

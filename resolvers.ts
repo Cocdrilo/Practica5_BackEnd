@@ -1,4 +1,7 @@
 import GraphQLJSON from 'graphql-type-json';
+
+//Solo dos personas sabian que hace este codigo Dios y yo que lo escribí, actualmente solo Dios sabe, pero funciona
+
 export const resolvers = {
     Query: {
         async pokemon(_: unknown, { name, id }) {
@@ -25,65 +28,78 @@ export const resolvers = {
         },
     },
 
-
-      Pokemon: {
+    Pokemon: {
         async moves(pokemon) {
-          const moves = await Promise.all(
-              pokemon.moves.map(async (move) => {
-                const moveData = await resolveURL(move.move.url);
+            const moves = await Promise.all(
+                pokemon.moves.map(async (move) => {
+                    const moveData = await resolveURL(move.move.url);
 
-                // Obtenemos las URLs de los Pokémon aprendices, excluyendo el Pokémon actual
-                const pokemonsQueAprenden = moveData.learned_by_pokemon
-                    .map((n) => n.url)
-                    .filter((url) => !url.includes(pokemon.id)); // Filtramos por ID del Pokémon actual
+                    // Incluimos los datos básicos del movimiento
+                    return {
+                        name: move.move.name,
+                        moveData: {
+                            accuracy: moveData.accuracy,
+                            power: moveData.power,
+                            pp: moveData.pp,
+                            priority: moveData.priority,
+                            type: moveData.type.name,
+                            // Retornamos los aprendices limitados porque sino cada movimiento puede tener 500 pokemons que lo tienen
+                            learnedByPokemon: (excludeId) => {
+                                return getLimitedLearnedByPokemon(moveData.learned_by_pokemon, excludeId, 10);
+                            },
+                        },
+                    };
+                })
+            );
 
-                console.log(`Pokémon que aprenden ${move.move.name}:`, pokemonsQueAprenden);
 
-                // Resolvemos solo las primeras N URLs (por ejemplo, 10)
-                const pokemons = await Promise.all(
-                    pokemonsQueAprenden.slice(0, 3).map((n) => resolveURL(n)) // Limitamos a 10 aprendices
-                );
-
-                // Creamos el objeto con los datos del movimiento
-                const datos = {
-                  accuracy: moveData.accuracy,
-                  power: moveData.power,
-                  pp: moveData.pp,
-                  priority: moveData.priority,
-                  type: moveData.type.name,
-                  learnedByPokemon: pokemons, // Lista limitada
-                };
-
-                return {
-                  name: move.move.name,
-                  moveData: datos,
-                };
-              })
-          );
-
-          return moves;
+            return moves;
         },
 
         async abilities(pokemon) {
-            return pokemon.abilities.map(async(ability)=>({
-                name : ability.ability.name,
-                is_hidden : ability.is_hidden,
-                slot : ability.slot
-            }))
+            return Promise.all(
+                pokemon.abilities.map(async (ability) => {
+                    // Obtener la información completa de la habilidad
+                    const abilityData = await resolveURL(ability.ability.url);
+
+                    // Extraer los Pokémon que tienen esta habilidad
+                    const pokemonWithAbility = abilityData.pokemon.map((poke) => poke.pokemon);
+
+                    // Filtrar para excluir al propio Pokémon
+                    const filteredPokemon = pokemonWithAbility.filter((poke) => poke.name !== pokemon.name);
+                    const mapedPokemons = filteredPokemon.map((n)=>n.url)
+
+                    const resolvedPokemons = await Promise.all(
+                        mapedPokemons.map((url) => resolveURL(url))
+                    );
+
+
+                    const abilityEffects = abilityData.effect_entries[1]?.short_effect || "No description available";
+
+
+                    return {
+                        name: ability.ability.name,
+                        is_hidden: ability.is_hidden,
+                        slot: ability.slot,
+                        effect: abilityEffects, // Descripción de la habilidad
+                        pokemonHasIt: resolvedPokemons, // Pokémon que tienen la habilidad (sin incluir al propio Pokémon)
+                    };
+                })
+            );
         },
 
         async stats(pokemon) {
-            return pokemon.stats.map(async (stat) => ({
+            return pokemon.stats.map((stat) => ({
                 base_stat: stat.base_stat,
                 effort: stat.effort,
-                name : stat.stat.name
+                name: stat.stat.name,
             }));
         },
 
         async types(pokemon) {
-            return pokemon.types.map(async (type) => ({
+            return pokemon.types.map((type) => ({
                 slot: type.slot,
-                name : type.type.name
+                name: type.type.name,
             }));
         },
 
@@ -122,7 +138,6 @@ export const resolvers = {
             };
         },
 
-
         async cry(pokemon) {
             return pokemon.id
                 ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/cries/${pokemon.id}.ogg`
@@ -153,9 +168,45 @@ export const resolvers = {
             return pokemon.weight;
         },
     },
+
+
+    MoveData: {
+        // Resolver optimizado para obtener los Pokémon aprendices limitados
+        async learnedByPokemon(moveData, _, { excludeId }) {
+            // Filtramos y limitamos los Pokémon aprendices de un movimiento
+            const pokemonsQueAprenden = moveData.learnedByPokemon(excludeId);
+
+            // Resolvemos las URLs para los Pokémon aprendices
+            const resolvedPokemons = await Promise.all(
+                pokemonsQueAprenden.map((url) => resolveURL(url))
+            );
+
+            return resolvedPokemons;
+        },
+    },
 };
 
-// Función auxiliar fuera de los resolutores
+// Función auxiliar para filtrar, mezclar aleatoriamente y limitar las URLs de los Pokémon que aprenden un movimiento
+function getLimitedLearnedByPokemon(learnedByPokemonURLs, excludeId, maxLimit) {
+    // Filtramos para excluir el Pokémon actual y obtenemos solo las URLs
+    const onlyUrl = learnedByPokemonURLs.map((n) => n.url);
+
+    // Excluimos al Pokémon actual (usando excludeId)
+    const filteredUrls = onlyUrl.filter((url) => !url.includes(excludeId));
+
+    for (let i = filteredUrls.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [filteredUrls[i], filteredUrls[j]] = [filteredUrls[j], filteredUrls[i]]; // Intercambiamos elementos
+    }
+
+    // Limitamos los resultados al número máximo permitido
+    const limitedUrls = filteredUrls.slice(0, maxLimit);
+
+    return limitedUrls;
+}
+
+
+// Función auxiliar fuera de los resolutores para hacer el fetch
 async function resolveURL(url) {
     try {
         const response = await fetch(url);
