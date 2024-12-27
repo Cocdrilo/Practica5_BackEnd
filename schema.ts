@@ -1,4 +1,3 @@
-
 export const schema = `#graphql
 type Query {
     pokemon(name: String, id: Int): Pokemon

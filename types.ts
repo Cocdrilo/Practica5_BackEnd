@@ -1,4 +1,3 @@
-// Tipos para las propiedades básicas
 export interface Ability {
     name: string;
     url: string;
@@ -88,7 +87,6 @@ export interface TypeSlot {
     type: Type;
 }
 
-// Tipo principal para el Pokémon
 export interface Pokemon {
     id: number;
     name: string;
