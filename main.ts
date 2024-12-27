@@ -10,9 +10,10 @@ const server = new ApolloServer({
 });
 
 const { url } = await startStandaloneServer(server, {
-    context:async () => ({}),
+    context: async () => ({ depth: 0 }),
     listen: { port: 9090 },
 });
+
 
 
 console.log(`Server running on: ${url}`);

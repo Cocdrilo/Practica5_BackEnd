@@ -1,155 +1,74 @@
-import GraphQLJSON from 'graphql-type-json';
+// Resolvers
 export const resolvers = {
     Query: {
-        async pokemon(_: unknown, { name, id }) {
-            let url = `https://pokeapi.co/api/v2/pokemon/`;
-
-            if (name) {
-                url += name.toLowerCase();
-            } else if (id) {
-                url += id;
-            } else {
-                throw new Error('Se debe proporcionar un nombre o ID');
-            }
-
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error('Error al obtener datos de Pokémon');
-                }
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                throw new Error('Error al obtener datos de Pokémon');
-            }
-        },
-    },
-
-
-    Pokemon: {
-        async moves(pokemon) {
-            const moves = await Promise.all(pokemon.moves.map(async (move) => {
-                const moveData = await resolveURL(move.move.url); // Usando la función auxiliar
-                const pokemonsQueAprenden = moveData.learned_by_pokemon.map((n)=>n.url)
-                const pokemons = await pokemonsQueAprenden.map(async (n)=>await resolveURL(n))
-                const datos = {
-                    accuracy : moveData.accuracy,
-                    power: moveData.power,
-                    pp : moveData.pp,
-                    priority: moveData.priority,
-                    type : moveData.type.name,
-                    learnedByPokemon : pokemons
-                }
-                return {
-                    name: move.move.name,
-                    moveData : datos
-                };
-            }));
-            return moves;
-        },
-
-        async abilities(pokemon) {
-            return pokemon.abilities.map(async(ability)=>({
-                name : ability.ability.name,
-                is_hidden : ability.is_hidden,
-                slot : ability.slot
-            }))
-        },
-
-        async stats(pokemon) {
-            return pokemon.stats.map(async (stat) => ({
-                base_stat: stat.base_stat,
-                effort: stat.effort,
-                name : stat.stat.name
-            }));
-        },
-
-        async types(pokemon) {
-            return pokemon.types.map(async (type) => ({
-                slot: type.slot,
-                name : type.type.name
-            }));
-        },
-
-        async sprites(pokemon) {
-            return {
-                front_default: pokemon.sprites.front_default,
-                back_default: pokemon.sprites.back_default,
-                front_shiny: pokemon.sprites.front_shiny,
-                back_shiny: pokemon.sprites.back_shiny,
-                other: {
-                    dream_world: {
-                        front_default: pokemon.sprites.other.dream_world.front_default,
-                        front_female: pokemon.sprites.other.dream_world.front_female,
-                    },
-                    home: {
-                        front_default: pokemon.sprites.other.home.front_default,
-                        front_female: pokemon.sprites.other.home.front_female,
-                        front_shiny: pokemon.sprites.other.home.front_shiny,
-                        front_shiny_female: pokemon.sprites.other.home.front_shiny_female,
-                    },
-                    official_artwork: {
-                        front_default: pokemon.sprites.other['official-artwork'].front_default,
-                        front_shiny: pokemon.sprites.other['official-artwork'].front_shiny,
-                    },
-                    showdown: {
-                        back_default: pokemon.sprites.other.showdown.back_default,
-                        back_female: pokemon.sprites.other.showdown.back_female,
-                        back_shiny: pokemon.sprites.other.showdown.back_shiny,
-                        back_shiny_female: pokemon.sprites.other.showdown.back_shiny_female,
-                        front_default: pokemon.sprites.other.showdown.front_default,
-                        front_female: pokemon.sprites.other.showdown.front_female,
-                        front_shiny: pokemon.sprites.other.showdown.front_shiny,
-                        front_shiny_female: pokemon.sprites.other.showdown.front_shiny_female,
-                    },
-                },
-            };
-        },
-
-
-        async cry(pokemon) {
-            return pokemon.id
-                ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/cries/${pokemon.id}.ogg`
-                : null;
-        },
-
-        async latest(pokemon) {
-            return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/latest/${pokemon.id}.ogg`;
-        },
-
-        async legacy(pokemon) {
-            return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/legacy/${pokemon.id}.ogg`;
-        },
-
-        async location_area_encounters(pokemon) {
-            return pokemon.location_area_encounters;
-        },
-
-        async base_experience(pokemon) {
-            return pokemon.base_experience;
-        },
-
-        async height(pokemon) {
-            return pokemon.height;
-        },
-
-        async weight(pokemon) {
-            return pokemon.weight;
-        },
-    },
-};
-
-// Función auxiliar fuera de los resolutores
-async function resolveURL(url) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Error al obtener datos desde la URL: ${url}`);
+      async pokemon(_: any, { name, id }: { name?: string; id?: number }, context: any) {
+        if (context.depth > 5) {
+          throw new Error("Maximum recursion depth exceeded");
         }
-        return await response.json();
-    } catch (error) {
-        throw new Error(`Error al hacer fetch en la URL: ${url}`);
-    }
-}
-
-export default resolvers;
+  
+        const identifier = name || id;
+        if (!identifier) {
+          throw new Error("You must provide a Pokémon name or ID.");
+        }
+  
+        const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${identifier}`);
+        if (!response.ok) {
+          throw new Error(`Error fetching Pokémon: ${response.statusText}`);
+        }
+  
+        const pokemonData = await response.json();
+  
+        return {
+          ...pokemonData,
+          moves: pokemonData.moves.map((move: any) => ({
+            name: move.move.name,
+            moveData: null, // Inicialmente null para evitar recursión inmediata
+          })),
+          abilities: pokemonData.abilities.map((ability: any) => ({
+            name: ability.ability.name,
+            is_hidden: ability.is_hidden,
+            slot: ability.slot,
+          })),
+          stats: pokemonData.stats.map((stat: any) => ({
+            base_stat: stat.base_stat,
+            effort: stat.effort,
+            name: stat.stat.name,
+          })),
+          types: pokemonData.types.map((type: any) => ({
+            slot: type.slot,
+            name: type.type.name,
+          })),
+          sprites: pokemonData.sprites,
+        };
+      },
+    },
+  
+    Move: {
+      async moveData(parent: any, _: any, context: any) {
+        if (context.depth > 5) {
+          return null; // Detener la recursión en niveles profundos
+        }
+  
+        context.depth += 1; // Incrementar la profundidad
+  
+        const response = await fetch(`https://pokeapi.co/api/v2/move/${parent.name}`);
+        if (!response.ok) {
+          throw new Error(`Error fetching move data: ${response.statusText}`);
+        }
+  
+        const moveData = await response.json();
+  
+        context.depth -= 1; // Restaurar la profundidad al salir
+  
+        return {
+          accuracy: moveData.accuracy,
+          power: moveData.power,
+          pp: moveData.pp,
+          priority: moveData.priority,
+          type: moveData.type.name,
+          learnedByPokemon: null, // Evitar referencias recursivas
+        };
+      },
+    },
+  };
+  
