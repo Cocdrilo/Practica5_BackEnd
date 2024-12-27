@@ -40,7 +40,7 @@ type MoveData {
     pp : Int
     priority : Int
     type : String
-    learnedByPokemon : Pokemon
+    learnedByPokemon : [Pokemon]
 }
 
 type Stat {

@@ -26,26 +26,42 @@ export const resolvers = {
     },
 
 
-    Pokemon: {
+      Pokemon: {
         async moves(pokemon) {
-            const moves = await Promise.all(pokemon.moves.map(async (move) => {
-                const moveData = await resolveURL(move.move.url); // Usando la función auxiliar
-                const pokemonsQueAprenden = moveData.learned_by_pokemon.map((n)=>n.url)
-                const pokemons = await pokemonsQueAprenden.map(async (n)=>await resolveURL(n))
+          const moves = await Promise.all(
+              pokemon.moves.map(async (move) => {
+                const moveData = await resolveURL(move.move.url);
+
+                // Obtenemos las URLs de los Pokémon aprendices, excluyendo el Pokémon actual
+                const pokemonsQueAprenden = moveData.learned_by_pokemon
+                    .map((n) => n.url)
+                    .filter((url) => !url.includes(pokemon.id)); // Filtramos por ID del Pokémon actual
+
+                console.log(`Pokémon que aprenden ${move.move.name}:`, pokemonsQueAprenden);
+
+                // Resolvemos solo las primeras N URLs (por ejemplo, 10)
+                const pokemons = await Promise.all(
+                    pokemonsQueAprenden.slice(0, 3).map((n) => resolveURL(n)) // Limitamos a 10 aprendices
+                );
+
+                // Creamos el objeto con los datos del movimiento
                 const datos = {
-                    accuracy : moveData.accuracy,
-                    power: moveData.power,
-                    pp : moveData.pp,
-                    priority: moveData.priority,
-                    type : moveData.type.name,
-                    learnedByPokemon : pokemons
-                }
-                return {
-                    name: move.move.name,
-                    moveData : datos
+                  accuracy: moveData.accuracy,
+                  power: moveData.power,
+                  pp: moveData.pp,
+                  priority: moveData.priority,
+                  type: moveData.type.name,
+                  learnedByPokemon: pokemons, // Lista limitada
                 };
-            }));
-            return moves;
+
+                return {
+                  name: move.move.name,
+                  moveData: datos,
+                };
+              })
+          );
+
+          return moves;
         },
 
         async abilities(pokemon) {
