@@ -184,6 +184,8 @@ function getLimitedLearnedByPokemon(learnedByPokemonURLs: string[], excludeId: n
         [filteredUrls[i], filteredUrls[j]] = [filteredUrls[j], filteredUrls[i]]; 
     }
 
+    //Limitamos la cantidad a devolver porque hay tantos pokemons en cada movimiento que la consulta se hace gigante y rompe el stack
+
     const limitedUrls = filteredUrls.slice(0, maxLimit);
 
     return limitedUrls;
